@@ -9,12 +9,12 @@ pkgbase='linux-sun7i'
 true && pkgname=("${pkgbase}" "${pkgbase}-headers")
 
 
-#_commit=77a43694fca9db61560b546ca94809535d37de0f
-_commit=sunxi-v3.4.75-r0
+_commit=26f12541c0db4a29f2f08f21b440d043d40c0969
+#_commit=sunxi-v3.10.25-r0
 _srcname=linux-sunxi-${_commit}
 _kernelname=${pkgbase#linux}
 _desc="The Linux Kernel and modules - sun7i"
-pkgver=3.4.75
+pkgver=3.13.r6
 pkgrel=1
 arch=('armv7h')
 url="https://github.com/linux-sunxi/linux-sunxi/"
@@ -23,13 +23,13 @@ makedepends=('xmlto' 'docbook-xsl' 'kmod' 'inetutils' 'bc' 'uboot-mkimage')
 optdepends=('bcmdhd-fw: Firmware for bcmdhd wlan chip')
 options=('!strip')
 #source=("$_srcname"::'git://github.com/linux-sunxi/linux-sunxi.git#tag=sunxi-3.4.75-r0"'
-#source=("linux-sunxi-sunxi-v3.4.75-r0.tar.gz"
-source=("https://github.com/linux-sunxi/linux-sunxi/archive/${_commit}.tar.gz"
+noextract=("linux-sunxi-${_commit}.tar.gz")
+#source=("linux-sunxi-${_commit}.tar.gz"
+source=(
         'config'
         'linux-sun7i.install')
-md5sums=('cdc505ba7e9f3447b43c16ff09fc37a1'
-         'aee925de769bdfcb021d044eade92417'
-         '901a5ca8831b699d86784fd5249113b5')
+md5sums=('dc51c421b76215d47aecba14620fed4b'
+         '31eab4ee8cd5a7a85dfad3429e2d7393')
 
 prepare() {
   cd "${srcdir}/${_srcname}"
@@ -71,7 +71,7 @@ build() {
   #yes "" | make config
 
   # build!
-  make ${MAKEFLAGS} -j9 uImage modules
+  LOADADDR=0x40008000 make ${MAKEFLAGS} -j9 uImage dtbs modules
 }
 
 _package() {
@@ -94,6 +94,7 @@ _package() {
   mkdir -p "${pkgdir}"/{lib/modules,lib/firmware,boot}
   make INSTALL_MOD_PATH="${pkgdir}" modules_install
   cp arch/$KARCH/boot/uImage "${pkgdir}/boot/uImage"
+  cp arch/$KARCH/boot/dts/sun7i-a20-cubietruck.dtb "${pkgdir}/boot/sun7i-a20-cubietruck.dtb"
 
   # set correct depmod command for install
   sed \
@@ -149,8 +150,8 @@ _package-headers() {
   # copy arch includes for external modules
   mkdir -p ${pkgdir}/usr/src/linux-${_kernver}/arch/$KARCH
   cp -a arch/$KARCH/include ${pkgdir}/usr/src/linux-${_kernver}/arch/$KARCH/
-  mkdir -p ${pkgdir}/usr/src/linux-${_kernver}/arch/$KARCH/mach-sun7i
-  cp -a arch/$KARCH/mach-sun7i/include ${pkgdir}/usr/src/linux-${_kernver}/arch/$KARCH/mach-sun7i/
+  #mkdir -p ${pkgdir}/usr/src/linux-${_kernver}/arch/$KARCH/mach-sun7i
+  #cp -a arch/$KARCH/mach-sun7i/include ${pkgdir}/usr/src/linux-${_kernver}/arch/$KARCH/mach-sun7i/
 
   # copy files necessary for later builds, like nvidia and vmware
   cp Module.symvers "${pkgdir}/usr/src/linux-${_kernver}"
@@ -171,13 +172,22 @@ _package-headers() {
   cp arch/${KARCH}/kernel/asm-offsets.s "${pkgdir}/usr/src/linux-${_kernver}/arch/${KARCH}/kernel/"
 
 # add headers for lirc package
-  mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/video"
-
-  cp drivers/media/video/*.h  "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/video/"
-
-  for i in bt8xx cpia2 cx25840 cx88 em28xx et61x251 pwc saa7134 sn9c102; do
-    mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/video/${i}"
-    cp -a drivers/media/video/${i}/*.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/video/${i}"
+  # pci
+  for i in bt8xx cx88 saa7134; do
+    mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/pci/${i}"
+    cp -a drivers/media/pci/${i}/*.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/pci/${i}"
+  done
+  # usb
+  for i in cpia2 em28xx pwc sn9c102; do
+    mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/usb/${i}"
+    cp -a drivers/media/usb/${i}/*.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/usb/${i}"
+  done
+  # i2c
+  mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/i2c"
+  cp drivers/media/i2c/*.h  "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/i2c/"
+  for i in cx25840; do
+    mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/i2c/${i}"
+    cp -a drivers/media/i2c/${i}/*.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/i2c/${i}"
   done
 
   # add docbook makefile
@@ -199,8 +209,8 @@ _package-headers() {
   # add dvb headers for external modules
   # in reference to:
   # http://bugs.archlinux.org/task/9912
-  mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb/dvb-core"
-  cp drivers/media/dvb/dvb-core/*.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb/dvb-core/"
+  mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb-core"
+  cp drivers/media/dvb-core/*.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb-core/"
   # and...
   # http://bugs.archlinux.org/task/11194
   mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/include/config/dvb/"
@@ -209,19 +219,19 @@ _package-headers() {
   # add dvb headers for http://mcentral.de/hg/~mrec/em28xx-new
   # in reference to:
   # http://bugs.archlinux.org/task/13146
-  mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb/frontends/"
-  cp drivers/media/dvb/frontends/lgdt330x.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb/frontends/"
-  cp drivers/media/video/msp3400-driver.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb/frontends/"
+  mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb-frontends/"
+  cp drivers/media/dvb-frontends/lgdt330x.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb-frontends/"
+  cp drivers/media/i2c/msp3400-driver.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/i2c/"
 
   # add dvb headers
   # in reference to:
   # http://bugs.archlinux.org/task/20402
-  mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb/dvb-usb"
-  cp drivers/media/dvb/dvb-usb/*.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb/dvb-usb/"
-  mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb/frontends"
-  cp drivers/media/dvb/frontends/*.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb/frontends/"
-  mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/common/tuners"
-  cp drivers/media/common/tuners/*.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/common/tuners/"
+  mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/usb/dvb-usb"
+  cp drivers/media/usb/dvb-usb/*.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/usb/dvb-usb/"
+  mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb-frontends"
+  cp drivers/media/dvb-frontends/*.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/dvb-frontends/"
+  mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/tuners"
+  cp drivers/media/tuners/*.h "${pkgdir}/usr/src/linux-${_kernver}/drivers/media/tuners/"
 
   # add xfs and shmem for aufs building
   mkdir -p "${pkgdir}/usr/src/linux-${_kernver}/fs/xfs"
