@@ -9,12 +9,12 @@ pkgbase='linux-sun7i'
 true && pkgname=("${pkgbase}" "${pkgbase}-headers")
 
 
-_commit=26f12541c0db4a29f2f08f21b440d043d40c0969
+_commit=aac1067f775024e16934a62f3163291bc9beb538
 #_commit=sunxi-v3.10.25-r0
 _srcname=linux-sunxi-${_commit}
 _kernelname=${pkgbase#linux}
 _desc="The Linux Kernel and modules - sun7i"
-pkgver=3.13.r6
+pkgver=3.13.r8-jwrdegoede
 pkgrel=1
 arch=('armv7h')
 url="https://github.com/linux-sunxi/linux-sunxi/"
@@ -23,13 +23,14 @@ makedepends=('xmlto' 'docbook-xsl' 'kmod' 'inetutils' 'bc' 'uboot-mkimage')
 optdepends=('bcmdhd-fw: Firmware for bcmdhd wlan chip')
 options=('!strip')
 #source=("$_srcname"::'git://github.com/linux-sunxi/linux-sunxi.git#tag=sunxi-3.4.75-r0"'
-noextract=("linux-sunxi-${_commit}.tar.gz")
-#source=("linux-sunxi-${_commit}.tar.gz"
-source=(
+#noextract=("linux-sunxi-${_commit}.tar.gz")
+#source=(
+source=("linux-sunxi-${_commit}.tar.gz"
         'config'
         'linux-sun7i.install')
-md5sums=('dc51c421b76215d47aecba14620fed4b'
-         '31eab4ee8cd5a7a85dfad3429e2d7393')
+md5sums=('b69904af83e8d1cabdafa93eb8ccb9cc'
+         'dc51c421b76215d47aecba14620fed4b'
+         '445d045c81915710ba8d619b5c3fa000')
 
 prepare() {
   cd "${srcdir}/${_srcname}"
